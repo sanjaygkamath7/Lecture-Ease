@@ -8,7 +8,7 @@ const Home = () => {
   const sendEmail = (e) => {
     e.preventDefault();
 
-    emailjs.sendForm('service_ly5fdjl', 'template_gxwt9fl', e.target, 'CLGh0AkODgKZFeoFw')
+    emailjs.sendForm('service_umzl7cr', 'template_r1fg0bi', e.target, 'oOkV4qdzDZUV0QGJx')
       .then((result) => {
         console.log(result.text);
         alert('Message sent successfully!');
@@ -92,7 +92,7 @@ const Home = () => {
               </div>
               <div className='box'>
                 <h4>EMAIL</h4>
-                <p>info@cecproject.com</p>
+                <p>contact@lecturease.tech</p>
               </div>
               <div className='box'>
                 <h4>PHONE</h4>

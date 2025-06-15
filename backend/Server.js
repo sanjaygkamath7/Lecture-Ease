@@ -30,7 +30,7 @@ app.use(express.json());
 
 
 const uploadPath =
-  "D:/Project/Mini-Project/backend/uploads"; 
+  "D:/Mini-Project/backend/uploads"; 
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }

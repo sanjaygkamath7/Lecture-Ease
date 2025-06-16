@@ -12,7 +12,6 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 app.use(express.json());
 // app.use(cors());
-const cors = require("cors");
 app.use(cors({
   origin: "https://lecturease.tech",
   credentials: true
@@ -29,10 +28,6 @@ mongoose
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
 app.use("/api", authRoutes);
-
-
-// // app.use(cors()
-// app.use(express.json());
 
 
 // const uploadPath =

@@ -26,7 +26,13 @@ mongoose
 app.use("/api", authRoutes);
 
 
-app.use(cors());
+// app.use(cors())
+const cors = require("cors");
+app.use(cors({
+  origin: "https://lecturease.tech",
+  credentials: true
+}));
+
 app.use(express.json());
 
 

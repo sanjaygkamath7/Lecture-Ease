@@ -9,7 +9,7 @@ import "./Home.css";
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const FileUpload = () => {
   const [ffmpeg] = useState(() => new FFmpeg());
@@ -204,8 +204,8 @@ const FileUpload = () => {
     try {
       setProcessingStatus("Uploading to server...");
       const response = await axios.post(
-        // "http://localhost:5000/api/upload-and-summarize",
-        `${BASE_URL}/api/upload-and-summarize`,
+        "http://localhost:5000/api/upload-and-summarize",
+        // `${BASE_URL}/api/upload-and-summarize`,
         formData,
         {
           headers: {

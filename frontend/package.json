@@ -5,7 +5,7 @@
   "dependencies": {
     "@clerk/clerk-js": "^5.34.4",
     "@clerk/nextjs": "^6.4.0",
-    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.1",
     "@google/generative-ai": "^0.21.0",
     "@testing-library/jest-dom": "^5.17.0",

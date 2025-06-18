@@ -15,7 +15,8 @@ const Signup = () => {
 
         try {
             // Send the name, email, and password to the server
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signup`, { name, email, password });
+            const response = await axios.post('http://localhost:5000/api/signup', { name, email, password });
+            // const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signup`, { name, email, password });
             setMessage(response.data.message);
             setTimeout(() => {
                 navigate('/login'); // Redirect to login page after successful signup

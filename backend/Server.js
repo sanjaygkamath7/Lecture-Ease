@@ -5,33 +5,25 @@ const axios = require("axios");
 const path = require("path");
 const cors = require("cors");
 const fs = require("fs"); 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 app.use(express.json());
-// app.use(cors());
-app.use(cors({
-  origin: "https://lecturease.tech",
-  credentials: true
-}));
+app.use(cors());
+// app.use(cors({
+//   origin: "https://lecturease.tech",
+//   credentials: true
+// }));
 
-
-mongoose
-  .connect(
-    "mongodb+srv://sanjaykamath7:qs0oEBdwmJMyNq23@cluster0.0p5hw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-    // { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 30000 }
-    {serverSelectionTimeoutMS: 30000 }
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true }
+    // {serverSelectionTimeoutMS: 30000 }
   )
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
 app.use("/api", authRoutes);
 
-
-// const uploadPath =
-//   "D:/Mini-Project/backend/uploads"; 
 const uploadPath = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
@@ -146,10 +138,20 @@ app.post("/api/upload-and-summarize", async (req, res) => {
 
     // Request transcription
     const transcriptResponse = await axios.post(
-      "https://api.assemblyai.com/v2/transcript",
-      { audio_url: uploadUrl, language_detection: true },
-      { headers: { authorization: process.env.ASSEMBLYAI_API_KEY } }
-    );
+  "https://api.assemblyai.com/v2/transcript",
+  {
+    audio_url: uploadUrl,
+    language_detection: true,
+  },
+  {
+    headers: {
+      authorization: process.env.ASSEMBLYAI_API_KEY,
+      "Content-Type": "application/json",
+    },
+
+  }
+);
+
 
     // Wait for transcription to complete
     const transcriptionResult = await getTranscription(

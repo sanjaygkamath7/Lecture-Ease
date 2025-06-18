@@ -4,8 +4,6 @@ import Home from './Home';
 import FileUpload from './FileUpload';
 import Login from './components/login';
 import Signup from './components/signup';
-
-
 import './index.css';
 
 const App = () => {

@@ -3,6 +3,14 @@
     "@ffmpeg/ffmpeg": "^0.12.15"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "react-scripts": "^5.0.1"
+  },
+  "scripts": {
+    "start": "npm run dev",
+    "start:frontend": "cd frontend && npm start",
+    "start:node": "cd node-backend && node server.js",
+    "start:python": "cd python-backend && python app.py",
+    "dev": "concurrently \"npm run start:frontend\" \"npm run start:node\" \"npm run start:python\""
   }
 }

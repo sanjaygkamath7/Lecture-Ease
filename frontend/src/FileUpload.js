@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import axios from "axios";
 import "./FileUpload.css";
 import "./Home.css";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
-
-// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+// Environment Variables
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const CHAT_API_URL = process.env.REACT_APP_CHAT_API_URL;
+const MAX_FILE_SIZE = parseInt(process.env.REACT_APP_MAX_FILE_SIZE, 10);
+const ALLOWED_VIDEO_TYPES = process.env.REACT_APP_ALLOWED_VIDEO_TYPES.split(",");
 
 const FileUpload = () => {
   const [ffmpeg] = useState(() => new FFmpeg());
@@ -59,16 +60,12 @@ const FileUpload = () => {
   }, [audioUrl]);
 
   const validateFile = useCallback((file) => {
-    if (!file) {
-      throw new Error("Please select a file to upload.");
-    }
-
+    if (!file) throw new Error("Please select a file to upload.");
     if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
       throw new Error("Please select a valid video file (MP4, WebM, or OGG).");
     }
-
     if (file.size > MAX_FILE_SIZE) {
-      throw new Error("File size exceeds 100MB limit.");
+      throw new Error(`File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit.`);
     }
   }, []);
 
@@ -84,7 +81,7 @@ const FileUpload = () => {
         setConversionProgress(0);
         setShowChatbot(false);
         setChatHistory([]);
-        setLectureSummary(""); // Reset lecture summary when new file is selected
+        setLectureSummary("");
       } catch (error) {
         setErrorMessage(error.message);
         setFile(null);
@@ -98,89 +95,40 @@ const FileUpload = () => {
     if (!chatMessage.trim() || !lectureSummary) return;
 
     const userMessage = chatMessage.trim();
-
-    // Add user message to chat history immediately
     setChatHistory((prev) => [...prev, { role: "user", content: userMessage }]);
-
-    // Clear input field
     setChatMessage("");
 
     try {
-      // Make the API request to the backend with context
       const response = await axios.post(
-        "http://localhost:5001/api/chat",
-        {
-          userMessage,
-          chatId,
-          summary: lectureSummary,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        `${CHAT_API_URL}/api/chat`,
+        { userMessage, chatId, summary: lectureSummary },
+        { headers: { "Content-Type": "application/json" } }
       );
-
-      // Handle the response from the Gemini AI
       setChatHistory((prev) => [
         ...prev,
-        {
-          role: "bot",
-          content: response.data.reply || "No response received from Gemini.",
-        },
+        { role: "bot", content: response.data.reply || "No response received from AI." },
       ]);
     } catch (error) {
-      console.error("Error in Gemini API:", error);
-      const errorMessage =
-        error.response?.data?.error ||
-        "Sorry, I encountered an error while connecting to Gemini.";
-
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          role: "bot",
-          content: errorMessage,
-        },
-      ]);
+      console.error("Error in chat API:", error);
+      const errorMessage = error.response?.data?.error || "Error connecting to AI.";
+      setChatHistory((prev) => [...prev, { role: "bot", content: errorMessage }]);
     }
   };
 
   const extractAudio = async (videoFile) => {
     try {
-      console.log("Starting audio extraction from video:", {
-        fileName: videoFile.name,
-        fileType: videoFile.type,
-        fileSize: videoFile.size,
-      });
-
       await ffmpeg.writeFile("input.mp4", await fetchFile(videoFile));
-      console.log("Video file written successfully");
-
-      const ffmpegVersion = await ffmpeg.exec(["-version"]);
-      console.log("FFmpeg version:", ffmpegVersion);
-
-      ffmpeg.on("progress", ({ progress, time }) => {
-        console.log("Extraction progress:", {
-          progress: Math.round(progress * 100),
-          timeMs: time,
-        });
+      ffmpeg.on("progress", ({ progress }) => {
         setConversionProgress(Math.round(progress * 100));
       });
-
       await ffmpeg.exec([
-        "-i",
-        "input.mp4",
+        "-i", "input.mp4",
         "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-ab",
-        "128k",
-        "-ar",
-        "44100",
-        "-y",
-        "output.mp3",
+        "-acodec", "libmp3lame",
+        "-ab", "128k",
+        "-ar", "44100",
+        "-y", "output.mp3",
       ]);
-
       const data = await ffmpeg.readFile("output.mp3");
       const audioBlob = new Blob([data.buffer], { type: "audio/mpeg" });
 
@@ -189,10 +137,7 @@ const FileUpload = () => {
 
       return audioBlob;
     } catch (error) {
-      console.error("Audio extraction error:", {
-        message: error.message,
-        stack: error.stack,
-      });
+      console.error("Audio extraction error:", error);
       throw new Error(`Failed to extract audio: ${error.message}`);
     }
   };
@@ -204,44 +149,31 @@ const FileUpload = () => {
     try {
       setProcessingStatus("Uploading to server...");
       const response = await axios.post(
-        "http://localhost:5000/api/upload-and-summarize",
-        // `${BASE_URL}/api/upload-and-summarize`,
+        `${BASE_URL}/api/upload-and-summarize`,
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
           timeout: 60000,
           onUploadProgress: (progressEvent) => {
-            const uploadProgress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
+            const uploadProgress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setConversionProgress(uploadProgress);
           },
         }
       );
 
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
+      if (response.data.error) throw new Error(response.data.error);
 
       setAudioUrl(null);
-      setLectureSummary(response.data.summary); // Store the summary
+      setLectureSummary(response.data.summary);
       return response.data;
     } catch (error) {
       if (error.code === "ECONNABORTED") {
-        throw new Error(
-          "Request timed out. Please try again with a shorter video."
-        );
+        throw new Error("Request timed out. Please try again with a shorter video.");
       }
       if (error.response) {
-        throw new Error(
-          `Server error: ${error.response.data.error || "Unknown server error"}`
-        );
+        throw new Error(`Server error: ${error.response.data.error || "Unknown server error"}`);
       } else if (error.request) {
-        throw new Error(
-          "No response from server. Please check your connection."
-        );
+        throw new Error("No response from server. Please check your connection.");
       } else {
         throw new Error(`Upload failed: ${error.message}`);
       }
@@ -252,13 +184,8 @@ const FileUpload = () => {
 
   const handleUpload = async () => {
     try {
-      if (!file) {
-        throw new Error("Please select a file to upload.");
-      }
-
-      if (!ffmpegLoaded) {
-        throw new Error("Audio processor is not ready. Please wait.");
-      }
+      if (!file) throw new Error("Please select a file to upload.");
+      if (!ffmpegLoaded) throw new Error("Audio processor is not ready. Please wait.");
 
       setUploading(true);
       setErrorMessage("");
@@ -271,8 +198,6 @@ const FileUpload = () => {
 
       setShowSuccess(true);
       setShowChatbot(true);
-
-      // Add the summary to the chat history
       setChatHistory([
         { role: "bot", content: "Summary of the lecture:" },
         { role: "bot", content: result.summary },
@@ -286,10 +211,8 @@ const FileUpload = () => {
       setProcessingStatus("");
     }
   };
- 
 
   return (
-    <>
     <div className="home">
       <div className="container">
         <div className="lectureEase">
@@ -310,18 +233,10 @@ const FileUpload = () => {
         </div>
 
         <div className="file-upload-container">
-          <input
-            type="file"
-            accept="video/mp4, video/webm, video/ogg"
-            onChange={handleFileChange}
-          />
+          <input type="file" accept={ALLOWED_VIDEO_TYPES.join(",")} onChange={handleFileChange} />
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {file && (
-            <button
-              className="upload-button"
-              onClick={handleUpload}
-              disabled={uploading}
-            >
+            <button className="upload-button" onClick={handleUpload} disabled={uploading}>
               {uploading ? "Uploading..." : "Upload and Summarize"}
             </button>
           )}
@@ -336,7 +251,7 @@ const FileUpload = () => {
 
         {showSuccess && (
           <div className="success-message">
-            <p>Summary Extracted Successfully!!<br></br>Proceed to the Chatbot</p>
+            <p>Summary Extracted Successfully!!<br />Proceed to the Chatbot</p>
           </div>
         )}
       </div>
@@ -344,10 +259,6 @@ const FileUpload = () => {
       {showChatbot && (
         <div className="right-panel">
           <div className="chatbot-container">
-            {/* <div className="summary-section">
-              <h4>Lecture Summary:</h4>
-              <p>{lectureSummary}</p>
-            </div> */}
             <div className="chat-history">
               {chatHistory.map((msg, idx) => (
                 <div key={idx} className={msg.role}>
@@ -355,10 +266,7 @@ const FileUpload = () => {
                 </div>
               ))}
             </div>
-            <form
-              onSubmit={handleChatSubmit}
-              className="chat-input-container"
-            >
+            <form onSubmit={handleChatSubmit} className="chat-input-container">
               <input
                 type="text"
                 value={chatMessage}
@@ -371,8 +279,6 @@ const FileUpload = () => {
         </div>
       )}
     </div>
-    
- </> 
   );
 };
 

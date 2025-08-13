@@ -9,12 +9,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
+
 app.use(express.json());
-app.use(cors());
-// app.use(cors({
-//   origin: "https://lecturease.tech",
-//   credentials: true
-// }));
+
+// CORS configuration using frontend environment variable
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['https://lecturease.tech'];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true }
     // {serverSelectionTimeoutMS: 30000 }
@@ -199,4 +205,7 @@ app.get("/health", (req, res) =>
 );
 
 // Start server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+});

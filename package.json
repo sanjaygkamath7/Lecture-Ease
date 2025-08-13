@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15"
+  },
+  "devDependencies": {
+    "react-scripts": "^5.0.1"
   }
 }
